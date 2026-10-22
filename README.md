@@ -3,19 +3,16 @@
 # Get Next Line
 
 `get_next_line` is a custom C function that reads and returns one line at a time from a file descriptor. The project introduces file descriptors, buffered reading, dynamic memory allocation, and the use of static variables to preserve data between function calls.
-
 ## Description
 
 The objective of this project is to implement a function capable of reading from a file descriptor line by line, regardless of the chosen `BUFFER_SIZE`.
 
 The function returns the next available line each time it is called. If a newline character is found, the returned line includes it. If the end of the file is reached and the last line does not end with a newline, that final line is still returned. When there is nothing else to read, or if an error occurs, the function returns `NULL`.
-
 ```c
 char *get_next_line(int fd);
 ```
 
 Unlike a function that reads an entire file at once, `get_next_line()` reads only what is necessary to return the next line. Any extra content read after a newline is saved for the next call.
-
 ## Function behavior
 
 | Situation | Return value |
@@ -25,7 +22,6 @@ Unlike a function that reads an entire file at once, `get_next_line()` reads onl
 | End of file is reached after remaining text | The final line is returned without `\n`. |
 | End of file is reached with no remaining text | `NULL`. |
 | An error occurs | `NULL`. |
-
 ## Project structure
 
 ```text
@@ -35,18 +31,19 @@ Unlike a function that reads an entire file at once, `get_next_line()` reads onl
 ├── get_next_line.h
 ├── get_next_line_bonus.c
 ├── get_next_line_utils_bonus.c
-└── get_next_line_bonus.h
+├── get_next_line_bonus.h
+├── main.c
+└── text.txt
 ```
-
 - `get_next_line.c` contains the main function and the core reading logic.
 - `get_next_line_utils.c` contains helper functions for string handling and memory management.
 - `get_next_line.h` contains the public prototype, required includes, and the default `BUFFER_SIZE`.
 - `get_next_line_bonus.c` contains the bonus implementation for multiple file descriptors.
 - `get_next_line_utils_bonus.c` contains the helper functions used by the bonus version.
 - `get_next_line_bonus.h` contains the bonus header file.
-
+- `main.c` provides a small example program for local testing.
+- `text.txt` is the sample input file used by `main.c`.
 ## Algorithm and design choices
-
 ### Static storage
 
 The implementation uses a static variable to preserve unread content between calls to `get_next_line()`.
@@ -58,13 +55,11 @@ In the mandatory version, one static pointer is used:
 ```c
 static char *storage;
 ```
-
 In the bonus version, a static array is used to keep a separate storage for each file descriptor:
 
 ```c
 static char *storage[1024];
 ```
-
 ### Reading from the file descriptor
 
 The function reads into a temporary buffer until one of the following conditions occurs:
@@ -76,13 +71,11 @@ The function reads into a temporary buffer until one of the following conditions
 After each successful call to `read()`, the buffer is appended to the static storage.
 
 This approach avoids reading the entire file in advance and keeps the function focused on returning only the next line.
-
 ### Line extraction
 
 Once the storage contains a newline, or the end of the file has been reached, the function allocates a new string for the line to return.
 
 If a newline exists, the line length is calculated up to and including `\n`. If there is no newline, the whole remaining storage is returned as the last line.
-
 ### Storage update
 
 After extracting the current line, the storage is updated.
@@ -90,13 +83,11 @@ After extracting the current line, the storage is updated.
 Only the characters that appear after the newline are kept. This remaining content becomes the starting point for the next call to `get_next_line()`.
 
 If there is no newline, or if no content remains after the newline, the storage is freed and set to `NULL`.
-
 ### Memory management
 
 All returned lines are dynamically allocated. The caller is responsible for freeing each returned line after use.
 
 The implementation also frees internal storage when an error occurs or when there is no remaining content to keep.
-
 ### Data structures
 
 No custom structure is required for this project. The implementation uses:
@@ -109,7 +100,6 @@ No custom structure is required for this project. The implementation uses:
 This keeps the solution simple and aligned with the scope of the project.
 
 ## Instructions
-
 ### Compilation
 
 The project can be compiled by defining `BUFFER_SIZE` at compilation time.
@@ -126,18 +116,18 @@ Other buffer sizes can also be tested:
 cc -Wall -Wextra -Werror -D BUFFER_SIZE=1 get_next_line.c get_next_line_utils.c main.c -o gnl
 cc -Wall -Wextra -Werror -D BUFFER_SIZE=9999 get_next_line.c get_next_line_utils.c main.c -o gnl
 ```
-
 If `BUFFER_SIZE` is not defined during compilation, the header provides a default value.
-
 ### Bonus compilation
 
 ```bash
-cc -Wall -Wextra -Werror -D BUFFER_SIZE=42 get_next_line_bonus.c get_next_line_utils_bonus.c main_bonus.c -o gnl_bonus
+cc -Wall -Wextra -Werror -D BUFFER_SIZE=42 get_next_line_bonus.c get_next_line_utils_bonus.c main.c -o gnl_bonus
 ```
+
+The command above uses the existing `main.c` with the bonus implementation. To test interleaved reads from multiple file descriptors, use a separate test program.
 
 ### Usage
 
-Include the header in a C source file:
+The repository includes `main.c` for local testing. It reads `text.txt` from the repository root. This is an equivalent example:
 
 ```c
 #include "get_next_line.h"
@@ -151,7 +141,7 @@ int main(void)
     int     fd;
     char    *line;
 
-    fd = open("file.txt", O_RDONLY);
+    fd = open("text.txt", O_RDONLY);
     if (fd < 0)
         return (1);
     line = get_next_line(fd);
@@ -171,7 +161,6 @@ Run the program with:
 ```bash
 ./gnl
 ```
-
 ## Bonus
 
 The bonus implementation allows `get_next_line()` to manage several file descriptors at the same time.
@@ -185,13 +174,11 @@ line3 = get_next_line(fd1);
 ```
 
 Each file descriptor keeps its own reading state, so the content of one descriptor is not mixed with the content of another one.
-
 ## Testing
 
 The implementation should be tested with different files, descriptor types, and buffer sizes.
 
 Useful cases include:
-
 - an empty file;
 - a file with one line;
 - a file with multiple lines;
@@ -205,7 +192,6 @@ Useful cases include:
 - reading from standard input.
 
 Example test loop:
-
 ```c
 line = get_next_line(fd);
 while (line)
@@ -215,7 +201,6 @@ while (line)
     line = get_next_line(fd);
 }
 ```
-
 ## Resources
 
 - `man 2 read` - low-level input from file descriptors.
@@ -224,7 +209,6 @@ while (line)
 - `man 3 free` - releasing dynamically allocated memory.
 - 42 documentation about static variables.
 - Peer review and testing with different `BUFFER_SIZE` values.
-
 ### Use of AI
 
 AI tools were used as a learning and review assistant to discuss static variables, buffered reading, memory management, and the structure and wording of this README.
